@@ -114,10 +114,19 @@ sema_up (struct semaphore *sema)
 
   old_level = intr_disable ();
   if (!list_empty (&sema->waiters)) 
-    thread_unblock (list_entry (list_pop_front (&sema->waiters),
-                                struct thread, elem));
+    {
+      /* Acorda a thread de maior prioridade que está esperando. */
+      struct list_elem *e = list_max (&sema->waiters, thread_priority_less,
+                                      NULL);
+      list_remove (e);
+      thread_unblock (list_entry (e, struct thread, elem));
+    }
   sema->value++;
   intr_set_level (old_level);
+
+  /* Se a thread acordada tem prioridade maior, cede a CPU
+     (dentro de interrupção, cede ao retornar dela). */
+  thread_preempt_if_needed ();
 }
 
 static void sema_test_helper (void *sema_);

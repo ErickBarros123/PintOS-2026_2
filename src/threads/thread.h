@@ -4,6 +4,7 @@
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
+#include "threads/float.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -23,6 +24,10 @@ typedef int tid_t;
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
+
+/* Limites do valor nice (MLFQS). */
+#define NICE_MIN -20
+#define NICE_MAX 20
 
 /* A kernel thread or user process.
 
@@ -94,6 +99,10 @@ struct thread
     struct list_elem elem;              /* List element. */
     int64_t sleep_ticks; /* <--- SÓ PRECISA ADICIONAR ISSO AQUI */
 
+    /* MLFQS. */
+    int nice;                           /* Valor nice (-20 a 20). */
+    float_type recent_cpu;              /* Uso recente de CPU (ponto fixo). */
+
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
@@ -137,6 +146,10 @@ void thread_set_priority (int);
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
+
+bool thread_priority_less (const struct list_elem *a,
+                           const struct list_elem *b, void *aux);
+void thread_preempt_if_needed (void);
 int thread_get_load_avg (void);
 
 #endif /* threads/thread.h */
